@@ -3,7 +3,7 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-AUTHORIZED_USERS = [7348005877]
+AUTHORIZED_USERS = [7348005877,  6609148454]
 
 CREDENTIALS_FILE = "credentials.json"
 USERS_FILE = "users.json"
