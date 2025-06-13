@@ -3,8 +3,6 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-AUTHORIZED_USERS = [7348005877, 6609148454]  # список разрешённых ID
-
 CREDENTIALS_FILE = "credentials.json"
 USERS_FILE = "users.json"
 
@@ -19,15 +17,7 @@ def save_json(data, filename):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
     username = update.effective_user.username or "пользователь"
-
-    print(f"User ID: {user_id} (username: {username})")  # Вывод ID в консоль
-
-    if user_id not in AUTHORIZED_USERS:
-        await update.message.reply_text("⛔ У вас нет доступа к этому боту.")
-        return
-
     credentials = load_json(CREDENTIALS_FILE)
     keyboard = []
 
@@ -61,19 +51,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = query.from_user.id
-
-    if user_id not in AUTHORIZED_USERS:
-        await query.message.reply_text("⛔ У вас нет доступа к этому боту.")
-        return
-
+    user_id = str(query.from_user.id)
     source = query.data
 
     credentials = load_json(CREDENTIALS_FILE)
     users = load_json(USERS_FILE)
 
-    user_id_str = str(user_id)
-    user_sources = users.get(user_id_str, [])
+    user_sources = users.get(user_id, [])
 
     if source in user_sources:
         message = f"⚠️ Вы уже получили данные по {source}."
@@ -84,7 +68,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             account = available[0]
             account["used"] = True
 
-            users.setdefault(user_id_str, []).append(source)
+            users.setdefault(user_id, []).append(source)
 
             save_json(credentials, CREDENTIALS_FILE)
             save_json(users, USERS_FILE)
