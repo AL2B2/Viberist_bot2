@@ -3,7 +3,7 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
-AUTHORIZED_USERS = [7348005877,  6609148454]
+AUTHORIZED_USERS = [7348005877, 6609148454]  # список разрешённых ID
 
 CREDENTIALS_FILE = "credentials.json"
 USERS_FILE = "users.json"
@@ -19,10 +19,12 @@ def save_json(data, filename):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
+    user_id = update.effective_user.id
     username = update.effective_user.username or "пользователь"
 
-    if int(user_id) not in AUTHORIZED_USERS:
+    print(f"User ID: {user_id} (username: {username})")  # Вывод ID в консоль
+
+    if user_id not in AUTHORIZED_USERS:
         await update.message.reply_text("⛔ У вас нет доступа к этому боту.")
         return
 
@@ -50,24 +52,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 reply_markup=reply_markup
             )
     except FileNotFoundError:
-     await update.message.reply_text(
-    f"👋 Привет, @{username}!\n"
-    "Выберите источник:",
-    reply_markup=reply_markup
-)
-
+        await update.message.reply_text(
+            f"👋 Привет, @{username}!\nВыберите источник:",
+            reply_markup=reply_markup
+        )
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(query.from_user.id)
+    user_id = query.from_user.id
+
+    if user_id not in AUTHORIZED_USERS:
+        await query.message.reply_text("⛔ У вас нет доступа к этому боту.")
+        return
+
     source = query.data
 
     credentials = load_json(CREDENTIALS_FILE)
     users = load_json(USERS_FILE)
 
-    user_sources = users.get(user_id, [])
+    user_id_str = str(user_id)
+    user_sources = users.get(user_id_str, [])
 
     if source in user_sources:
         message = f"⚠️ Вы уже получили данные по {source}."
@@ -78,7 +84,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             account = available[0]
             account["used"] = True
 
-            users.setdefault(user_id, []).append(source)
+            users.setdefault(user_id_str, []).append(source)
 
             save_json(credentials, CREDENTIALS_FILE)
             save_json(users, USERS_FILE)
@@ -91,7 +97,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             message = f"❌ Нет доступных аккаунтов для {source}."
     else:
-             message = f"⚠️ Источник '{source}' не найден."
+        message = f"⚠️ Источник '{source}' не найден."
 
     try:
         await query.edit_message_text(text=message, parse_mode="HTML")
