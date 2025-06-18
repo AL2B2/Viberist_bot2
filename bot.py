@@ -4,7 +4,6 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 CREDENTIALS_FILE = "credentials.json"
-USERS_FILE = "users.json"
 
 def load_json(filename):
     if not os.path.exists(filename):
@@ -51,27 +50,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(query.from_user.id)
     source = query.data
 
     credentials = load_json(CREDENTIALS_FILE)
-    users = load_json(USERS_FILE)
 
-    user_sources = users.get(user_id, [])
-
-    if source in user_sources:
-        message = f"⚠️ Вы уже получили данные по {source}."
-    elif source in credentials:
+    if source in credentials:
         available = [acc for acc in credentials[source] if not acc.get("used")]
 
         if available:
             account = available[0]
             account["used"] = True
 
-            users.setdefault(user_id, []).append(source)
-
             save_json(credentials, CREDENTIALS_FILE)
-            save_json(users, USERS_FILE)
 
             message = (
                 f"🔐 <b>{source}</b>\n"
